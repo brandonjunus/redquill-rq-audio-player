@@ -1,7 +1,6 @@
 {
   "name": "@redquill/rq-audio-player",
   "version": "1.0.0",
-  "private": false,
   "description": "Redquill Audio Player",
   "main": "./lib/index.js",
   "module": "./es/index.js",
