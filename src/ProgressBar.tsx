@@ -53,16 +53,16 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
 
   getDuration(): number {
     const { audio, srcDuration } = this.props
-    return typeof srcDuration === 'undefined' ? audio.duration : srcDuration
+    return typeof srcDuration === 'undefined' ? audio.duration || 0 : srcDuration
   }
 
   // Get time info while dragging indicator by mouse or touch
   getCurrentProgress = (event: MouseEvent | TouchEvent): TimePosInfo => {
     const { audio, progressBar } = this.props
     const isSingleFileProgressiveDownload =
-      audio.src.indexOf('blob:') !== 0 && typeof this.props.srcDuration === 'undefined'
+      typeof this.props.srcDuration === 'undefined' && (!audio.duration || !isFinite(audio.duration))
 
-    if (isSingleFileProgressiveDownload && (!audio.src || !isFinite(audio.currentTime) || !progressBar.current)) {
+    if (isSingleFileProgressiveDownload || !isFinite(audio.currentTime) || !progressBar.current) {
       return { currentTime: 0, currentTimePos: '0%' }
     }
 
@@ -77,7 +77,10 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
     }
     const duration = this.getDuration()
     const currentTime = (duration * relativePos) / maxRelativePos
-    return { currentTime, currentTimePos: `${((relativePos / maxRelativePos) * 100).toFixed(2)}%` }
+    return {
+      currentTime,
+      currentTimePos: `${((relativePos / maxRelativePos) * 100).toFixed(2)}%`,
+    }
   }
 
   handleContextMenu = (event: SyntheticEvent): void => {
@@ -131,7 +134,10 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
         onSeek(audio, newTime).then(
           () => this.setState({ waitingForSeekCallback: false }),
           (err) => {
-            throw new Error(err)
+            this.setState({ waitingForSeekCallback: false })
+            if (onChangeCurrentTimeError) {
+              onChangeCurrentTimeError(err)
+            }
           }
         )
       })
@@ -139,17 +145,21 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
       const newProps: { isDraggingProgress: boolean; currentTimePos?: string } = {
         isDraggingProgress: false,
       }
-      if (audio.readyState === audio.HAVE_NOTHING || audio.readyState === audio.HAVE_METADATA || !isFinite(newTime)) {
-        try {
-          audio.load()
-        } catch (err) {
-          newProps.currentTimePos = '0%'
-          return onChangeCurrentTimeError && onChangeCurrentTimeError(err as Error)
-        }
+
+      if (!isFinite(newTime)) {
+        newProps.currentTimePos = '0%'
+        return onChangeCurrentTimeError && onChangeCurrentTimeError(new Error('Invalid seek time'))
       }
 
-      audio.currentTime = newTime
-      this.setState(newProps)
+      try {
+        audio.currentTime = newTime
+        this.setState(newProps)
+      } catch (err) {
+        newProps.currentTimePos = '0%'
+        if (onChangeCurrentTimeError) {
+          onChangeCurrentTimeError(err as Error)
+        }
+      }
     }
 
     if (event instanceof MouseEvent) {
@@ -247,7 +257,11 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
               <div
                 key={i}
                 className="rhap_download-progress"
-                style={{ left, width, transitionDuration: hasDownloadProgressAnimation ? '.2s' : '0s' }}
+                style={{
+                  left,
+                  width,
+                  transitionDuration: hasDownloadProgressAnimation ? '.2s' : '0s',
+                }}
               />
             ))}
         </div>

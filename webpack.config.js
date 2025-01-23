@@ -7,9 +7,9 @@ module.exports = {
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'lib'),
-    filename: 'react-h5-audio-player.min.js',
+    filename: 'rq-audio-player.min.js',
     libraryTarget: 'umd',
-    library: 'ReactH5AudioPlayer',
+    library: 'RQAudioPlayer',
     umdNamedDefine: true,
   },
   resolve: {

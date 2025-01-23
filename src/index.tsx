@@ -173,9 +173,14 @@ class H5AudioPlayer extends Component<PlayerProps> {
   downloadProgressAnimationTimer?: number
 
   togglePlay = (e: React.SyntheticEvent): void => {
+    console.log('RQ AUDIO PLAYER - togglePlay called at:', new Date().toISOString())
+    console.log('Event:', e)
     e.stopPropagation()
     const audio = this.audio.current
-    if ((audio.paused || audio.ended) && audio.src) {
+    console.log('audio is paused', audio.paused)
+    console.log('audio is ended', audio.ended)
+    console.log('audio src', audio.src)
+    if (audio.paused || audio.ended) {
       this.playAudioPromise()
     } else if (!audio.paused) {
       audio.pause()
@@ -192,9 +197,12 @@ class H5AudioPlayer extends Component<PlayerProps> {
       this.audio.current.load()
     }
     const playPromise = this.audio.current.play()
+
+    console.log('playPromise', playPromise)
     // playPromise is null in IE 11
     if (playPromise) {
       playPromise.then(null).catch((err) => {
+        console.log('playPromise error', err)
         const { onPlayError } = this.props
         onPlayError && onPlayError(new Error(err))
       })
